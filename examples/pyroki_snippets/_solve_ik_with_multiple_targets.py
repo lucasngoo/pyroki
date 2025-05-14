@@ -18,6 +18,8 @@ def solve_ik_with_multiple_targets(
     target_link_names: Sequence[str],
     target_wxyzs: onp.ndarray,
     target_positions: onp.ndarray,
+    prior_configuration: onp.ndarray = None,
+    smoothness_weight: float = 10.0,
 ) -> onp.ndarray:
     """
     Solves the basic IK problem for a robot.
@@ -27,6 +29,8 @@ def solve_ik_with_multiple_targets(
         target_link_names: Sequence[str]. List of link names to be controlled.
         target_wxyzs: onp.ndarray. Shape: (num_targets, 4). Target orientations.
         target_positions: onp.ndarray. Shape: (num_targets, 3). Target positions.
+        prior_configuration: onp.ndarray. Shape: (robot.joint.actuated_count,). Previous joint configuration for smoother motion.
+        smoothness_weight: float. Weight for the smoothness cost.
 
     Returns:
         cfg: onp.ndarray. Shape: (robot.joint.actuated_count,).
@@ -36,11 +40,19 @@ def solve_ik_with_multiple_targets(
     assert target_wxyzs.shape == (num_targets, 4)
     target_link_indices = [robot.links.names.index(name) for name in target_link_names]
 
+    # Convert prior_configuration to jax array if provided
+    prior_configuration_jax = None
+    if prior_configuration is not None:
+        assert prior_configuration.shape == (robot.joints.num_actuated_joints,)
+        prior_configuration_jax = jnp.array(prior_configuration)
+
     cfg = _solve_ik_jax(
         robot,
         jnp.array(target_wxyzs),
         jnp.array(target_positions),
         jnp.array(target_link_indices),
+        prior_configuration_jax,
+        smoothness_weight,
     )
     assert cfg.shape == (robot.joints.num_actuated_joints,)
 
@@ -53,6 +65,8 @@ def _solve_ik_jax(
     target_wxyz: jax.Array,
     target_position: jax.Array,
     target_joint_indices: jax.Array,
+    prior_configuration: jax.Array = None,
+    smoothness_weight: float = 10.0,
 ) -> jax.Array:
     joint_var = robot.joint_var_cls(0)
     factors = [
@@ -72,6 +86,17 @@ def _solve_ik_jax(
             jnp.array([100.0] * robot.joints.num_joints),
         ),
     ]
+    
+    # Add rest cost to bias towards prior configuration if provided
+    if prior_configuration is not None:
+        factors.append(
+            pk.costs.rest_cost(
+                joint_var,
+                rest_pose=prior_configuration,
+                weight=smoothness_weight,
+            )
+        )
+    
     sol = (
         jaxls.LeastSquaresProblem(factors, [joint_var])
         .analyze()

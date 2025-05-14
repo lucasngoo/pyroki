@@ -35,19 +35,37 @@ def main():
         "/ik_target_1", scale=0.2, position=(0.41, 0.3, 0.56), wxyz=(0, 0, 1, 0)
     )
     timing_handle = server.gui.add_number("Elapsed (ms)", 0.001, disabled=True)
+    
+    # Add a slider to control the smoothness weight
+    smoothness_slider = server.gui.add_slider(
+        "Smoothness Weight", 
+        min=0.0, 
+        max=50.0, 
+        step=1.0, 
+        initial_value=10.0,
+    )
+
+    # Initialize previous solution
+    previous_solution = None
 
     while True:
         # Solve IK.
         start_time = time.time()
         print("ik_target_0", ik_target_0.position, ik_target_0.wxyz)
         print("ik_target_1", ik_target_1.position, ik_target_1.wxyz)
+        
         solution = pks.solve_ik_with_multiple_targets(
             robot=robot,
             target_link_names=target_link_names,
             target_positions=np.array([ik_target_0.position, ik_target_1.position]),
             target_wxyzs=np.array([ik_target_0.wxyz, ik_target_1.wxyz]),
+            prior_configuration=previous_solution,
+            smoothness_weight=smoothness_slider.value,
         )
         print("solution", solution)
+        
+        # Save current solution for next iteration
+        previous_solution = solution
 
         # Update timing handle.
         elapsed_time = time.time() - start_time
