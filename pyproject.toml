@@ -22,7 +22,7 @@ dependencies = [
     "jax_dataclasses>=1.0.0",
     "jaxtyping",
     "loguru",
-    "robot_descriptions",
+    "robot_descriptions @ git+https://github.com/lucasngoo/robot_descriptions.py.git",
     "jaxls @ git+https://github.com/brentyi/jaxls.git",
     "yourdfpy",
     "trimesh",

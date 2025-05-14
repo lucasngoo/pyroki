@@ -16,8 +16,8 @@ import pyroki_snippets as pks
 def main():
     """Main function for bimanual IK."""
 
-    urdf = load_robot_description("yumi_description")
-    target_link_names = ["yumi_link_7_r", "yumi_link_7_l"]
+    urdf = load_robot_description("agibot_x1_description")
+    target_link_names = ["right_wrist_pitch", "left_wrist_pitch"]
 
     # Create robot.
     robot = pk.Robot.from_urdf(urdf)
@@ -39,12 +39,15 @@ def main():
     while True:
         # Solve IK.
         start_time = time.time()
+        print("ik_target_0", ik_target_0.position, ik_target_0.wxyz)
+        print("ik_target_1", ik_target_1.position, ik_target_1.wxyz)
         solution = pks.solve_ik_with_multiple_targets(
             robot=robot,
             target_link_names=target_link_names,
             target_positions=np.array([ik_target_0.position, ik_target_1.position]),
             target_wxyzs=np.array([ik_target_0.wxyz, ik_target_1.wxyz]),
         )
+        print("solution", solution)
 
         # Update timing handle.
         elapsed_time = time.time() - start_time
