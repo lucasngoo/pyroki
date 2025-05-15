@@ -12,6 +12,9 @@ import pyroki as pk
 from viser.extras import ViserUrdf
 import pyroki_snippets as pks
 
+from mujoco_ar import MujocoARConnector
+from trimesh.transformations import quaternion_from_matrix
+
 
 def main():
     """Main function for bimanual IK."""
@@ -48,17 +51,28 @@ def main():
     # Initialize previous solution
     previous_solution = None
 
+    connector = MujocoARConnector()
+    connector.start()
+
     while True:
+        data = connector.get_latest_data()
+        if data["position"] is None:
+            continue
+
+        T = np.eye(4)
+        T[:3, :3] = np.asarray(data["rotation"])
+        T[:3, 3] = np.asarray(data["position"])
+        pos = T[:3, 3]
+        quat = quaternion_from_matrix(T)
+
         # Solve IK.
         start_time = time.time()
-        print("ik_target_0", ik_target_0.position, ik_target_0.wxyz)
-        print("ik_target_1", ik_target_1.position, ik_target_1.wxyz)
         
         solution = pks.solve_ik_with_multiple_targets(
             robot=robot,
             target_link_names=target_link_names,
-            target_positions=np.array([ik_target_0.position, ik_target_1.position]),
-            target_wxyzs=np.array([ik_target_0.wxyz, ik_target_1.wxyz]),
+            target_positions=np.array([pos, ik_target_1.position]),
+            target_wxyzs=np.array([quat, ik_target_1.wxyz]),
             prior_configuration=previous_solution,
             smoothness_weight=smoothness_slider.value,
         )

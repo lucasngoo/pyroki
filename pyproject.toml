@@ -28,6 +28,7 @@ dependencies = [
     "trimesh",
     "viser",
     "pyliblzfse",  # Need for viser.extras import in viser==0.2.23 
+    "mujoco_ar",
 ]
 
 [project.optional-dependencies]
