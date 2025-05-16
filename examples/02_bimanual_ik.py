@@ -7,6 +7,8 @@ import time
 import viser
 from robot_descriptions.loaders.yourdfpy import load_robot_description
 import numpy as np
+import os
+import csv
 
 import pyroki as pk
 from viser.extras import ViserUrdf
@@ -182,6 +184,11 @@ def main():
 
         # Update visualizer.
         urdf_vis.update_cfg(solution)
+
+        # Write solution to CSV file (overwrite previous content)
+        with open(os.path.expanduser("~/pose.csv"), "w") as f:
+            writer = csv.writer(f)
+            writer.writerow(solution)
 
         # Store current positions as previous for next frame
         prev_right_hand_position = right_hand_position.copy()
