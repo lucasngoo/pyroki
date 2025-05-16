@@ -77,7 +77,7 @@ def _solve_ik_jax(
                 jaxlie.SO3(target_wxyz), target_position
             ),
             target_joint_indices,
-            pos_weight=50.0,
+            pos_weight=100.0,
             ori_weight=10.0,
         ),
         pk.costs.limit_cost(
