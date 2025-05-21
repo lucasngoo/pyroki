@@ -58,6 +58,8 @@ def main():
 
     # Maximum allowed movement per frame (in meters)
     max_position_delta = np.array([0.05, 0.05, 0.05])  # Max movement in x, y, z per frame
+    # Maximum allowed joint movement per frame (in radians)
+    max_joint_delta = 0.05  # Max movement per joint per frame
 
     # Create interactive controller with initial position.
     ik_target_0 = server.scene.add_transform_controls(
@@ -173,6 +175,15 @@ def main():
             prior_configuration=previous_solution,
             smoothness_weight=smoothness_slider.value,
         )
+
+        # Cap joint movements to prevent extreme changes between frames
+        joint_deltas = solution - previous_solution
+        capped_solution = np.copy(solution)
+        for i in range(len(solution)):
+            if abs(joint_deltas[i]) > max_joint_delta:
+                capped_solution[i] = previous_solution[i] + np.sign(joint_deltas[i]) * max_joint_delta
+
+        solution = capped_solution
         print("solution", solution)
         
         # Save current solution for next iteration
